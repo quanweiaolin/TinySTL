@@ -1,5 +1,5 @@
-#ifndef TINY_STL_VECTOR_H_
-#define TINY_STL_VECTOR_H_
+#ifndef TINY_STL_ALGORITHM_H_
+#define TINY_STL_ALGORITHM_H_
 
 #include "tiny_stl_config.h"
 
