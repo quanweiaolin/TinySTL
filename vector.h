@@ -6,6 +6,9 @@
 #include "uninitialized.h"
 #include <initializer_list>
 #include "util.h"
+#include "construct.h"
+#include "algorithm.h"
+
 TINY_STL_BEGIN
 
 template <class T, class Alloc = allocator<T>>
@@ -41,9 +44,11 @@ protected:
 public:
 	iterator begin() { return start; }
 	const_iterator begin() const { return start; }
+	const_iterator cbegin() const { return start; }
 	iterator end() { return finish; }
 	const_iterator end() const { return finish; }
-	size_type size() const { return size_type(end() - begin()); }
+	const_iterator cend() const { return finish; }
+	size_type size() const { return static_cast<size_type>(end() - begin()); }
 	size_type max_size() const { return size_type(-1) / sizeof(T); }
 	size_type capacity() const { return size_type(end_of_storage - begin()); }
 	bool empty() const { return begin() == end(); }
@@ -54,6 +59,16 @@ public:
 	}
 	reference back() { return *(finish - 1); }
 	const_reference back() const { return *(finish - 1); }
+	void clear()
+	{
+		destroy(start,finish);
+		finish = start;
+	}
+	iterator insert(iterator pos, const T& value);
+	iterator insert(const_iterator pos, const T& value);
+	void insert(iterator pos, size_type count, const T& value);
+
+
 	reference operator[](size_type n) { return *(begin() + n); }
 	const_reference operator[](size_type n) const { return *(begin() + n); }
 	vector<T, Alloc>& operator=(const vector<T, Alloc>& x);
@@ -104,11 +119,20 @@ void vector<T, Alloc>::insert_aux(iterator position, const T& x)
 {
 	if (finish != end_of_storage)
 	{
-		construct(finish,*(finish-1));
-		++finish;
-		T x_copy = x;
-		copy_backward(position, finish - 2, finish - 1);
-		*position = x_copy;
+		if (position != finish)
+		{
+			construct(finish,*(finish-1));
+			++finish;
+			T x_copy = x;
+			copy_backward(position, finish - 2, finish - 1);
+			*position = x_copy;
+		}
+		else
+		{
+			construct(finish, x);
+			++finish;
+		}
+		
 	}
 	else
 	{
@@ -127,6 +151,30 @@ void vector<T, Alloc>::insert_aux(iterator position, const T& x)
 		end_of_storage = iter_new_start + new_size;
 	}
 }
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator pos, const T& value)
+{
+	size_type n = pos - start;
+	insert_aux(pos, value);
+	return start + n;
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(const_iterator pos, const T& value)
+{
+	iterator temp_pos = const_cast<iterator>(pos);
+	size_type n = temp_pos - start;
+	insert_aux(temp_pos, value);
+	return start + n;
+}
+
+template <class T, class Alloc>
+void vector<T, Alloc>::insert(iterator pos, size_type count, const T& value)
+{
+
+}
+
 
 template <class T, class Alloc>
 vector<T, Alloc>& vector<T, Alloc>::operator=(const vector<T, Alloc>& x)
